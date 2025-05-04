@@ -1,41 +1,55 @@
-from flask import Flask, request, render_template
+import streamlit as st
 import joblib
+import json
 import pandas as pd
 import numpy as np
+import os
 
-app = Flask(__name__)
+# --- Título de la app ---
+st.title("Recomendador de Productos B2C y B2B - Corona")
 
-# --- Cargar modelos B2C ---
-b2c_model_xgb = joblib.load('modelos/b2c_model_xgb.pkl')
-b2c_model_lfm = joblib.load('modelos/b2c_model_lfm.pkl')
-b2c_dataset = joblib.load('modelos/b2c_dataset.pkl')
-b2c_user_features = joblib.load('modelos/b2c_user_features.pkl')
-b2c_item_features = joblib.load('modelos/b2c_item_features.pkl')
-b2c_encoders = joblib.load('modelos/b2c_encoders.pkl')
+# --- Cargar modelos y estructuras ---
+try:
+    model_xgb = joblib.load("modelos/b2c_model_xgb.pkl")
+    model_lfm = joblib.load("modelos/b2c_model_lfm.pkl")
+except Exception as e:
+    st.error(f"Error cargando los modelos: {e}")
 
-# --- Cargar modelos B2B ---
-b2b_model_xgb = joblib.load('modelos/b2b_model_xgb.pkl')
-b2b_model_lfm = joblib.load('modelos/b2b_model_lfm.pkl')
-b2b_dataset = joblib.load('modelos/b2b_dataset.pkl')
-b2b_user_features = joblib.load('modelos/b2b_user_features.pkl')
-b2b_item_features = joblib.load('modelos/b2b_item_features.pkl')
-b2b_encoders = joblib.load('modelos/b2b_encoders.pkl')
+# --- Cargar archivos JSON ---
+def cargar_json(path):
+    with open(path, "r") as f:
+        return json.load(f)
 
-# Dummy data para simular recomendaciones (esto se reemplaza con las funciones reales)
-def recomendar_dummy(cliente_id, tipo="b2c"):
-    productos = [f"Producto_{i}" for i in range(5)]
-    puntajes = np.round(np.random.rand(5), 2)
-    df = pd.DataFrame({'producto': productos, 'puntaje': puntajes})
-    return df.sort_values('puntaje', ascending=False)
+try:
+    encoders = cargar_json("modelos/b2c_encoders.json")
+    with open("modelos/b2c_user_features.json") as f:
+        user_features = json.load(f)
+    with open("modelos/b2c_item_features.json") as f:
+        item_features = json.load(f)
+    with open("modelos/b2c_dataset.json") as f:
+        dataset = json.load(f)
+except Exception as e:
+    st.error(f"Error cargando estructuras JSON: {e}")
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    recomendaciones = None
-    if request.method == 'POST':
-        cliente_id = request.form['cliente_id']
-        tipo = request.form['tipo']
-        recomendaciones = recomendar_dummy(cliente_id, tipo)
-    return render_template('index.html', recomendaciones=recomendaciones)
+# --- Input del usuario ---
+cliente_id = st.text_input("Ingrese el ID del cliente o empresa:", "")
+top_n = st.slider("Número de recomendaciones", 1, 20, 5)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# --- Simulación de recomendación ---
+def recomendar(cliente_id, top_n):
+    # Aquí debes insertar la lógica real
+    return pd.DataFrame({
+        "Producto": [f"Producto_{i}" for i in range(1, top_n + 1)],
+        "Score XGBoost": np.round(np.random.rand(top_n), 4),
+        "Score LightFM": np.round(np.random.rand(top_n), 4),
+        "Score Híbrido": np.round(np.random.rand(top_n), 4)
+    })
+
+# --- Al hacer clic ---
+if st.button("Generar Recomendaciones"):
+    if not cliente_id:
+        st.warning("Por favor ingrese un ID.")
+    else:
+        st.success(f"Recomendaciones para el cliente: {cliente_id}")
+        recomendaciones = recomendar(cliente_id, top_n)
+        st.dataframe(recomendaciones)
