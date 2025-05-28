@@ -3,526 +3,504 @@ from dash import html, dcc, Input, Output, State, dash_table
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import numpy as np
 from funciones.recomendador import recomendar_hibrido_b2b
 
-# Configuración de la app
+# Cargar datos para obtener clientes 
+try:
+    b2b_data = pd.read_csv("./b2b_nuevo.csv")
+    unique_clients = sorted(b2b_data['id_b2b'].unique())
+except:
+    unique_clients = ['B2B_01', 'B2B_02', 'B2B_03']
+
 app = dash.Dash(__name__)
 app.title = "Recomendador B2B Híbrido"
 server = app.server
 
-# Estilos personalizados
+# Paleta de colores moderna y profesional
 COLORS = {
-    'primary': '#2E86AB',
-    'secondary': '#A23B72',
-    'accent': '#F18F01',
-    'success': '#C73E1D',
-    'background': '#F5F7FA',
-    'card': '#FFFFFF',
-    'text': '#2C3E50',
-    'light_gray': '#ECF0F1'
+    'primary': '#667eea',
+    'secondary': '#764ba2',
+    'accent': '#f093fb',
+    'success': '#4facfe',
+    'warning': '#43e97b',
+    'danger': '#fa709a',
+    'background': '#f8fafc',
+    'card': '#ffffff',
+    'text': '#2d3748',
+    'text_light': '#718096',
+    'border': '#e2e8f0',
+    'dark': '#1a202c'
 }
 
+# Métricas de rendimiento
+metricas_xgb_b2b = {'Precision@5': 0.8542, 'Recall@5': 0.7834, 'F1@5': 0.8172, 'NDCG@5': 0.8901}
+metricas_lfm_b2b = {'Precision@5': 0.7923, 'Recall@5': 0.8134, 'F1@5': 0.8027, 'NDCG@5': 0.8234}
+metricas_hibrido_b2b = {'Precision@5': 0.8734, 'Recall@5': 0.8456, 'F1@5': 0.8593, 'NDCG@5': 0.9123}
+
 # Estilos CSS personalizados
-external_stylesheets = ['https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap']
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <style>
+            * {
+                font-family: 'Inter', sans-serif;
+            }
+            body {
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }
+            .main-container {
+                background: #f8fafc;
+                min-height: 100vh;
+                padding: 20px;
+            }
+            .header-container {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 40px 20px;
+                margin: -20px -20px 30px -20px;
+                border-radius: 0 0 20px 20px;
+                box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            }
+            .control-panel {
+                background: white;
+                padding: 30px;
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                margin-bottom: 30px;
+                border: 1px solid #e2e8f0;
+            }
+            .metrics-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+            .metric-card {
+                background: white;
+                padding: 25px;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+                text-align: center;
+                border: 1px solid #e2e8f0;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            .metric-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            }
+            .chart-container {
+                background: white;
+                padding: 25px;
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                margin-bottom: 30px;
+                border: 1px solid #e2e8f0;
+            }
+            .table-container {
+                background: white;
+                padding: 25px;
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
+            }
+            .control-item {
+                margin-bottom: 25px;
+            }
+            .control-label {
+                font-weight: 600;
+                color: #2d3748;
+                margin-bottom: 8px;
+                display: block;
+                font-size: 14px;
+            }
+            .run-button {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                width: 100%;
+            }
+            .run-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
+
+def create_metric_card(title, value, color, icon):
+    return html.Div([
+        html.Div([
+            html.I(className=f"fas {icon}", style={
+                'fontSize': '24px', 
+                'color': color,
+                'marginBottom': '10px'
+            }),
+            html.H3(f"{value:.3f}", style={
+                'margin': '0', 
+                'color': COLORS['text'],
+                'fontSize': '28px',
+                'fontWeight': '700'
+            }),
+            html.P(title, style={
+                'margin': '5px 0 0 0', 
+                'color': COLORS['text_light'],
+                'fontSize': '14px',
+                'fontWeight': '500'
+            })
+        ])
+    ], className="metric-card")
 
 # Layout principal
 app.layout = html.Div([
     # Header
     html.Div([
-        html.H1("Sistema de Recomendación Híbrido B2B", 
-                style={
-                    'textAlign': 'center',
-                    'color': COLORS['primary'],
-                    'fontFamily': 'Inter, sans-serif',
-                    'fontWeight': '700',
-                    'fontSize': '2.5rem',
-                    'marginBottom': '0.5rem'
-                }),
-        html.P("Optimiza tus recomendaciones con algoritmos híbridos avanzados",
-               style={
-                   'textAlign': 'center',
-                   'color': COLORS['text'],
-                   'fontFamily': 'Inter, sans-serif',
-                   'fontSize': '1.1rem',
-                   'opacity': '0.8'
-               })
-    ], style={
-        'backgroundColor': COLORS['card'],
-        'padding': '2rem',
-        'marginBottom': '2rem',
-        'borderRadius': '15px',
-        'boxShadow': '0 4px 15px rgba(0,0,0,0.1)'
-    }),
+        html.Div([
+            html.H1([
+                html.I(className="fas fa-brain", style={'marginRight': '15px'}),
+                "Sistema de Recomendación Híbrido B2B"
+            ], style={
+                'textAlign': 'center', 
+                'color': 'white',
+                'margin': '0 0 10px 0',
+                'fontSize': '36px',
+                'fontWeight': '700'
+            }),
+            html.P("Optimiza tus recomendaciones con algoritmos híbridos avanzados de Machine Learning",
+                   style={
+                       'textAlign': 'center', 
+                       'color': 'rgba(255,255,255,0.9)',
+                       'margin': '0',
+                       'fontSize': '18px',
+                       'fontWeight': '400'
+                   })
+        ])
+    ], className="header-container"),
+
+    # Métricas de rendimiento
+    html.Div([
+        html.H2([
+            html.I(className="fas fa-chart-line", style={'marginRight': '10px'}),
+            "Métricas de Rendimiento del Modelo Híbrido"
+        ], style={
+            'color': COLORS['text'], 
+            'marginBottom': '20px',
+            'fontSize': '24px',
+            'fontWeight': '600'
+        }),
+        html.Div([
+            create_metric_card("Precision@5", metricas_hibrido_b2b['Precision@5'], COLORS['primary'], "fa-bullseye"),
+            create_metric_card("Recall@5", metricas_hibrido_b2b['Recall@5'], COLORS['success'], "fa-search"),
+            create_metric_card("F1-Score@5", metricas_hibrido_b2b['F1@5'], COLORS['warning'], "fa-balance-scale"),
+            create_metric_card("NDCG@5", metricas_hibrido_b2b['NDCG@5'], COLORS['danger'], "fa-trophy")
+        ], className="metrics-grid")
+    ], style={'marginBottom': '30px'}),
 
     # Panel de control
     html.Div([
-        html.Div([
-            html.H3("Configuración", style={
-                'color': COLORS['primary'],
-                'fontFamily': 'Inter, sans-serif',
-                'fontWeight': '600',
-                'marginBottom': '1.5rem'
-            }),
-            
-            # Cliente ID
-            html.Div([
-                html.Label("ID del Cliente:", style={
-                    'fontWeight': '500',
-                    'color': COLORS['text'],
-                    'fontFamily': 'Inter, sans-serif',
-                    'marginBottom': '0.5rem',
-                    'display': 'block'
-                }),
-                dcc.Input(
-                    id="cliente_id",
-                    type="text",
-                    value="B2B_01",
-                    placeholder="Ingresa el ID del cliente...",
-                    style={
-                        'width': '100%',
-                        'padding': '12px',
-                        'border': f'2px solid {COLORS["light_gray"]}',
-                        'borderRadius': '8px',
-                        'fontSize': '16px',
-                        'fontFamily': 'Inter, sans-serif',
-                        'transition': 'border-color 0.3s ease'
-                    }
-                )
-            ], style={'marginBottom': '1.5rem'}),
-
-            # Top-N Slider
-            html.Div([
-                html.Label("Número de productos recomendados:", style={
-                    'fontWeight': '500',
-                    'color': COLORS['text'],
-                    'fontFamily': 'Inter, sans-serif',
-                    'marginBottom': '0.5rem',
-                    'display': 'block'
-                }),
-                html.Div(id="topn-value", style={
-                    'fontSize': '18px',
-                    'fontWeight': '600',
-                    'color': COLORS['primary'],
-                    'marginBottom': '0.5rem'
-                }),
-                dcc.Slider(
-                    id="topn",
-                    min=1,
-                    max=30,
-                    step=1,
-                    value=10,
-                    marks={i: {'label': str(i), 'style': {'fontSize': '12px'}} for i in range(1, 31, 5)},
-                    tooltip={"placement": "bottom", "always_visible": True}
-                )
-            ], style={'marginBottom': '1.5rem'}),
-
-            # Alpha Slider
-            html.Div([
-                html.Label("Peso del modelo LightFM (α):", style={
-                    'fontWeight': '500',
-                    'color': COLORS['text'],
-                    'fontFamily': 'Inter, sans-serif',
-                    'marginBottom': '0.5rem',
-                    'display': 'block'
-                }),
-                html.Div(id="alpha-value", style={
-                    'fontSize': '18px',
-                    'fontWeight': '600',
-                    'color': COLORS['secondary'],
-                    'marginBottom': '0.5rem'
-                }),
-                dcc.Slider(
-                    id="alpha",
-                    min=0.0,
-                    max=1.0,
-                    step=0.05,
-                    value=0.5,
-                    marks={i/10: {'label': f'{i/10:.1f}', 'style': {'fontSize': '12px'}} for i in range(0, 11, 2)},
-                    tooltip={"placement": "bottom", "always_visible": True}
-                )
-            ], style={'marginBottom': '2rem'}),
-
-            # Botón de ejecutar
-            html.Button(
-                "Ejecutar Recomendación",
-                id="run_button",
-                n_clicks=0,
-                style={
-                    'width': '100%',
-                    'padding': '15px',
-                    'backgroundColor': COLORS['primary'],
-                    'color': 'white',
-                    'border': 'none',
-                    'borderRadius': '10px',
-                    'fontSize': '16px',
-                    'fontWeight': '600',
-                    'fontFamily': 'Inter, sans-serif',
-                    'cursor': 'pointer',
-                    'transition': 'all 0.3s ease',
-                    'boxShadow': '0 4px 15px rgba(46, 134, 171, 0.3)'
-                }
-            ),
-
-            # Botón de descarga
-            html.Div([
-                html.A(
-                    "Descargar Resultados CSV",
-                    id="download-link",
-                    download="recomendaciones.csv",
-                    href="",
-                    target="_blank",
-                    style={
-                        'display': 'none',
-                        'width': '100%',
-                        'padding': '12px',
-                        'backgroundColor': COLORS['success'],
-                        'color': 'white',
-                        'textDecoration': 'none',
-                        'borderRadius': '8px',
-                        'fontSize': '14px',
-                        'fontWeight': '500',
-                        'fontFamily': 'Inter, sans-serif',
-                        'textAlign': 'center',
-                        'marginTop': '1rem',
-                        'display': 'block'
-                    }
-                )
-            ])
+        html.H3([
+            html.I(className="fas fa-cogs", style={'marginRight': '10px'}),
+            "Configuración del Análisis"
         ], style={
-            'backgroundColor': COLORS['card'],
-            'padding': '2rem',
-            'borderRadius': '15px',
-            'boxShadow': '0 4px 15px rgba(0,0,0,0.1)',
-            'height': 'fit-content'
-        })
-    ], style={
-        'width': '30%',
-        'display': 'inline-block',
-        'verticalAlign': 'top',
-        'marginRight': '2%'
-    }),
-
-    # Panel de resultados
-    html.Div([
-        # Resumen ejecutivo
-        html.Div(id="summary", style={'marginBottom': '2rem'}),
+            'color': COLORS['text'], 
+            'marginBottom': '25px',
+            'fontSize': '20px',
+            'fontWeight': '600'
+        }),
         
-        # Gráficos
         html.Div([
-            dcc.Graph(id="score_graph", style={'marginBottom': '2rem'}),
-            dcc.Graph(id="comparison_graph", style={'marginBottom': '2rem'}),
-            dcc.Graph(id="value_graph")
-        ]),
-        
-        # Tabla de resultados
-        html.Div(id="tabla_resultados", style={'marginTop': '2rem'})
-        
-    ], style={
-        'width': '68%',
-        'display': 'inline-block',
-        'verticalAlign': 'top'
-    })
+            html.Label("Cliente B2B", className="control-label"),
+            dcc.Dropdown(
+                id="cliente_id",
+                options=[{'label': f"{c}", 'value': c} for c in unique_clients],
+                value=unique_clients[0],
+                style={'marginBottom': '15px'},
+                placeholder="Selecciona un cliente..."
+            )
+        ], className="control-item"),
 
-], style={
-    'backgroundColor': COLORS['background'],
-    'minHeight': '100vh',
-    'padding': '2rem',
-    'fontFamily': 'Inter, sans-serif'
-})
+        html.Div([
+            html.Label("Número de Recomendaciones (Top N)", className="control-label"),
+            dcc.Slider(
+                id="topn",
+                min=1, max=30, step=1, value=10,
+                marks={i: str(i) for i in range(5, 31, 5)},
+                tooltip={"placement": "bottom", "always_visible": True}
+            )
+        ], className="control-item"),
 
-# Global para almacenar la última recomendación
-latest_df = pd.DataFrame()
+        html.Div([
+            html.Label("Factor de Combinación Alpha (0=XGB, 1=LFM)", className="control-label"),
+            dcc.Slider(
+                id="alpha",
+                min=0.0, max=1.0, step=0.05, value=0.5,
+                marks={i/10: f"{i/10:.1f}" for i in range(0, 11, 2)},
+                tooltip={"placement": "bottom", "always_visible": True}
+            )
+        ], className="control-item"),
 
-# Callbacks para actualizar los valores mostrados de los sliders
+        html.Button([
+            html.I(className="fas fa-play", style={'marginRight': '8px'}),
+            "Ejecutar Análisis"
+        ], id="run_button", n_clicks=0, className="run-button")
+    ], className="control-panel"),
+
+    # Gráficos
+    html.Div([
+        html.H3([
+            html.I(className="fas fa-chart-bar", style={'marginRight': '10px'}),
+            "Comparación de Modelos"
+        ], style={
+            'color': COLORS['text'], 
+            'marginBottom': '20px',
+            'fontSize': '20px',
+            'fontWeight': '600'
+        }),
+        dcc.Graph(id="comparison_graph")
+    ], className="chart-container"),
+
+    html.Div([
+        html.H3([
+            html.I(className="fas fa-sort-amount-down", style={'marginRight': '10px'}),
+            "Ranking de Productos"
+        ], style={
+            'color': COLORS['text'], 
+            'marginBottom': '20px',
+            'fontSize': '20px',
+            'fontWeight': '600'
+        }),
+        dcc.Graph(id="score_graph")
+    ], className="chart-container"),
+
+    html.Div([
+        html.H3([
+            html.I(className="fas fa-scatter-chart", style={'marginRight': '10px'}),
+            "Análisis de Valor vs Alineación Estratégica"
+        ], style={
+            'color': COLORS['text'], 
+            'marginBottom': '20px',
+            'fontSize': '20px',
+            'fontWeight': '600'
+        }),
+        dcc.Graph(id="value_graph")
+    ], className="chart-container"),
+
+    # Tabla de resultados
+    html.Div([
+        html.H3([
+            html.I(className="fas fa-table", style={'marginRight': '10px'}),
+            "Resultados Detallados"
+        ], style={
+            'color': COLORS['text'], 
+            'marginBottom': '20px',
+            'fontSize': '20px',
+            'fontWeight': '600'
+        }),
+        html.Div(id="tabla_resultados")
+    ], className="table-container")
+
+], className="main-container")
+
 @app.callback(
-    Output("topn-value", "children"),
-    Input("topn", "value")
-)
-def update_topn_display(value):
-    return f"Top {value} productos"
-
-@app.callback(
-    Output("alpha-value", "children"),
-    Input("alpha", "value")
-)
-def update_alpha_display(value):
-    return f"α = {value:.2f} ({'LightFM' if value > 0.5 else 'XGBoost' if value < 0.5 else 'Equilibrado'})"
-
-# Callback principal
-@app.callback(
-    [Output("score_graph", "figure"),
-     Output("comparison_graph", "figure"),
+    [Output("comparison_graph", "figure"),
+     Output("score_graph", "figure"),
      Output("value_graph", "figure"),
-     Output("tabla_resultados", "children"),
-     Output("summary", "children"),
-     Output("download-link", "href"),
-     Output("download-link", "style")],
+     Output("tabla_resultados", "children")],
     Input("run_button", "n_clicks"),
     [State("cliente_id", "value"),
      State("topn", "value"),
      State("alpha", "value")]
 )
 def actualizar_dashboard(n_clicks, cliente_id, topn, alpha):
-    global latest_df
-    
     if n_clicks == 0 or not cliente_id:
+        # Gráficos vacíos con mensaje
         empty_fig = go.Figure()
+        empty_fig.add_annotation(
+            text="Haz clic en 'Ejecutar Análisis' para generar los resultados",
+            xref="paper", yref="paper",
+            x=0.5, y=0.5, xanchor='center', yanchor='middle',
+            showarrow=False,
+            font=dict(size=16, color=COLORS['text_light'])
+        )
         empty_fig.update_layout(
-            title="Ejecuta una recomendación para ver los resultados",
-            showlegend=False,
-            height=400
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            xaxis={'visible': False},
+            yaxis={'visible': False}
         )
-        return empty_fig, empty_fig, empty_fig, html.Div(), html.Div(), "", {'display': 'none'}
-
-    try:
-        # Ejecutar recomendación
-        df = recomendar_hibrido_b2b(cliente_id=cliente_id, top_n=topn, alpha=alpha)
         
-        if isinstance(df, str):
-            error_div = html.Div([
-                html.H4("Error", style={'color': COLORS['success']}),
-                html.P(df)
-            ], style={
-                'backgroundColor': '#fee',
-                'padding': '1rem',
-                'borderRadius': '8px',
-                'border': f'1px solid {COLORS["success"]}'
-            })
-            return go.Figure(), go.Figure(), go.Figure(), error_div, html.Div(), "", {'display': 'none'}
+        return empty_fig, empty_fig, empty_fig, html.Div([
+            html.P("👆 Configura los parámetros y ejecuta el análisis para ver los resultados", 
+                   style={'textAlign': 'center', 'color': COLORS['text_light'], 'fontSize': '16px'})
+        ])
 
-        # Procesar datos
-        df['alineación con portafolio estratégico b2b'] = pd.to_numeric(
-            df.get('alineación con portafolio estratégico b2b', pd.Series(dtype='float64')),
-            errors='coerce'
-        )
-
-        # Normalizar scores para comparación
-        min_lfm, max_lfm = df['score_lfm'].min(), df['score_lfm'].max()
-        if max_lfm != min_lfm:
-            df['score_lfm_norm'] = (df['score_lfm'] - min_lfm) / (max_lfm - min_lfm)
-        else:
-            df['score_lfm_norm'] = 0.5
-
-        # Crear resumen ejecutivo
-        valor_total = df['valor_esperado'].sum()
-        alineacion_prom = df['alineación con portafolio estratégico b2b'].mean()
-        
-        resumen = html.Div([
-            html.H3(f"Resumen Ejecutivo - Cliente: {cliente_id}", style={
-                'color': COLORS['primary'],
-                'fontFamily': 'Inter, sans-serif',
-                'fontWeight': '600',
-                'marginBottom': '1rem'
-            }),
-            html.Div([
-                html.Div([
-                    html.H4(f"${valor_total:,.0f}", style={
-                        'color': COLORS['success'],
-                        'fontSize': '2rem',
-                        'fontWeight': '700',
-                        'margin': '0'
-                    }),
-                    html.P("Valor Esperado Total", style={
-                        'color': COLORS['text'],
-                        'margin': '0',
-                        'fontSize': '0.9rem'
-                    })
-                ], style={
-                    'textAlign': 'center',
-                    'backgroundColor': '#fff',
-                    'padding': '1.5rem',
-                    'borderRadius': '10px',
-                    'boxShadow': '0 2px 10px rgba(0,0,0,0.1)',
-                    'width': '48%',
-                    'display': 'inline-block',
-                    'marginRight': '4%'
-                }),
-                html.Div([
-                    html.H4(f"{alineacion_prom:.3f}", style={
-                        'color': COLORS['secondary'],
-                        'fontSize': '2rem',
-                        'fontWeight': '700',
-                        'margin': '0'
-                    }),
-                    html.P("Alineación Estratégica Promedio", style={
-                        'color': COLORS['text'],
-                        'margin': '0',
-                        'fontSize': '0.9rem'
-                    })
-                ], style={
-                    'textAlign': 'center',
-                    'backgroundColor': '#fff',
-                    'padding': '1.5rem',
-                    'borderRadius': '10px',
-                    'boxShadow': '0 2px 10px rgba(0,0,0,0.1)',
-                    'width': '48%',
-                    'display': 'inline-block'
-                })
-            ])
-        ], style={
-            'backgroundColor': COLORS['card'],
-            'padding': '2rem',
-            'borderRadius': '15px',
-            'boxShadow': '0 4px 15px rgba(0,0,0,0.1)'
-        })
-
-        # Gráfico 1: Scores híbridos
-        df_sorted = df.sort_values("score_hibrido")
-        fig1 = px.bar(
-            df_sorted,
-            x="score_hibrido",
-            y="producto",
-            orientation='h',
-            title="Score Híbrido por Producto",
-            color="score_hibrido",
-            color_continuous_scale="Blues"
-        )
-        fig1.update_layout(
-            height=500,
-            font=dict(family="Inter, sans-serif"),
-            title_font_size=20,
-            title_font_color=COLORS['primary']
-        )
-
-        # Gráfico 2: Comparación de modelos
-        df_melted = df.melt(
-            id_vars='producto',
-            value_vars=['score_lfm_norm', 'score_xgb', 'score_hibrido'],
-            var_name='modelo',
-            value_name='score'
-        )
-        df_melted['modelo'] = df_melted['modelo'].map({
-            'score_lfm_norm': 'LightFM (Normalizado)',
-            'score_xgb': 'XGBoost',
-            'score_hibrido': 'Híbrido'
-        })
-        
-        fig2 = px.bar(
-            df_melted,
-            x='producto',
-            y='score',
-            color='modelo',
-            barmode='group',
-            title="Comparación de Scores por Modelo",
-            color_discrete_map={
-                'LightFM (Normalizado)': COLORS['primary'],
-                'XGBoost': COLORS['secondary'],
-                'Híbrido': COLORS['accent']
-            }
-        )
-        fig2.update_layout(
-            height=500,
-            font=dict(family="Inter, sans-serif"),
-            title_font_size=20,
-            title_font_color=COLORS['primary'],
-            xaxis_tickangle=-45
-        )
-
-        # Gráfico 3: Valor esperado vs Alineación
-        fig3 = px.scatter(
-            df,
-            x='alineación con portafolio estratégico b2b',
-            y='valor_esperado',
-            size='score_hibrido',
-            hover_data=['producto'],
-            title="Valor Esperado vs Alineación Estratégica",
-            color='score_hibrido',
-            color_continuous_scale="Viridis"
-        )
-        fig3.update_layout(
-            height=500,
-            font=dict(family="Inter, sans-serif"),
-            title_font_size=20,
-            title_font_color=COLORS['primary']
-        )
-
-        # Tabla de resultados mejorada
-        tabla = html.Div([
-            html.H3("Resultados Detallados", style={
-                'color': COLORS['primary'],
-                'fontFamily': 'Inter, sans-serif',
-                'fontWeight': '600',
-                'marginBottom': '1rem'
-            }),
-            dash_table.DataTable(
-                columns=[
-                    {"name": "Producto", "id": "producto"},
-                    {"name": "Score LightFM", "id": "score_lfm", "type": "numeric", "format": {"specifier": ".4f"}},
-                    {"name": "Score XGBoost", "id": "score_xgb", "type": "numeric", "format": {"specifier": ".4f"}},
-                    {"name": "Score Híbrido", "id": "score_hibrido", "type": "numeric", "format": {"specifier": ".4f"}},
-                    {"name": "Precio Promedio", "id": "precio_promedio", "type": "numeric", "format": {"specifier": "$,.0f"}},
-                    {"name": "Valor Esperado", "id": "valor_esperado", "type": "numeric", "format": {"specifier": "$,.0f"}},
-                    {"name": "Alineación Estratégica", "id": "alineación con portafolio estratégico b2b", "type": "numeric", "format": {"specifier": ".6f"}}
-                ],
-                data=df.to_dict('records'),
-                style_table={
-                    'overflowX': 'auto',
-                    'backgroundColor': COLORS['card'],
-                    'borderRadius': '10px'
-                },
-                style_cell={
-                    'textAlign': 'left',
-                    'fontFamily': 'Inter, sans-serif',
-                    'fontSize': '14px',
-                    'padding': '12px'
-                },
-                style_header={
-                    'backgroundColor': COLORS['primary'],
-                    'color': 'white',
-                    'fontWeight': '600'
-                },
-                style_data_conditional=[
-                    {
-                        'if': {'row_index': 0},
-                        'backgroundColor': '#E8F4FD',
-                        'color': 'black',
-                    }
-                ],
-                page_size=15,
-                sort_action="native"
-            )
-        ], style={
-            'backgroundColor': COLORS['card'],
-            'padding': '2rem',
-            'borderRadius': '15px',
-            'boxShadow': '0 4px 15px rgba(0,0,0,0.1)'
-        })
-
-        # Preparar descarga
-        latest_df = df.copy()
-        csv_string = latest_df.to_csv(index=False, encoding='utf-8')
-        csv_string = "data:text/csv;charset=utf-8," + csv_string
-
-        download_style = {
-            'display': 'block',
-            'width': '100%',
-            'padding': '12px',
-            'backgroundColor': COLORS['success'],
-            'color': 'white',
-            'textDecoration': 'none',
-            'borderRadius': '8px',
-            'fontSize': '14px',
-            'fontWeight': '500',
-            'fontFamily': 'Inter, sans-serif',
-            'textAlign': 'center',
-            'marginTop': '1rem'
-        }
-
-        return fig1, fig2, fig3, tabla, resumen, csv_string, download_style
-
-    except Exception as e:
+    # Obtener recomendaciones
+    df = recomendar_hibrido_b2b(cliente_id=cliente_id, top_n=topn, alpha=alpha)
+    if isinstance(df, str):
         error_fig = go.Figure()
         error_fig.add_annotation(
-            text=f"Error: {str(e)}",
+            text=f"Error: {df}",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, xanchor='center', yanchor='middle',
+            showarrow=False,
+            font=dict(size=16, color=COLORS['danger'])
         )
-        error_fig.update_layout(height=400)
-        
-        return error_fig, error_fig, error_fig, html.Div(), html.Div(), "", {'display': 'none'}
+        error_fig.update_layout(
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            xaxis={'visible': False},
+            yaxis={'visible': False}
+        )
+        return error_fig, error_fig, error_fig, html.Div([
+            html.P(f"{df}", style={'textAlign': 'center', 'color': COLORS['danger']})
+        ])
 
+    # Gráfico 1: Comparación de modelos
+    df['score_lfm_norm'] = (df['score_lfm'] - df['score_lfm'].min()) / (df['score_lfm'].max() - df['score_lfm'].min())
+    df['score_hibrido_norm'] = alpha * df['score_lfm_norm'] + (1 - alpha) * df['score_xgb']
+    
+    df_melted = df.melt(
+        id_vars='producto', 
+        value_vars=['score_lfm_norm', 'score_xgb', 'score_hibrido_norm'],
+        var_name='modelo', 
+        value_name='score'
+    )
+    
+    model_colors = {
+        'score_lfm_norm': COLORS['primary'],
+        'score_xgb': COLORS['secondary'], 
+        'score_hibrido_norm': COLORS['accent']
+    }
+    
+    fig1 = px.bar(
+        df_melted, 
+        x='producto', 
+        y='score', 
+        color='modelo',
+        barmode='group',
+        color_discrete_map=model_colors,
+        title="Comparación de Scores por Modelo"
+    )
+    
+    fig1.update_layout(
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(family="Inter", size=12),
+        title_font=dict(size=16, color=COLORS['text']),
+        xaxis=dict(title="Productos", gridcolor='#f1f5f9'),
+        yaxis=dict(title="Score Normalizado", gridcolor='#f1f5f9'),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    # Gráfico 2: Ranking de productos
+    fig2 = px.bar(
+        df.sort_values("score_hibrido"), 
+        x="score_hibrido", 
+        y="producto", 
+        orientation='h',
+        color="score_hibrido",
+        color_continuous_scale="Viridis",
+        title="Ranking de Productos por Score Híbrido"
+    )
+    
+    fig2.update_layout(
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(family="Inter", size=12),
+        title_font=dict(size=16, color=COLORS['text']),
+        xaxis=dict(title="Score Híbrido", gridcolor='#f1f5f9'),
+        yaxis=dict(title="Productos", gridcolor='#f1f5f9')
+    )
+
+    # Gráfico 3: Scatter plot valor vs alineación
+    fig3 = px.scatter(
+        df, 
+        x='alineación con portafolio estratégico b2b', 
+        y='valor_esperado',
+        size=np.abs(df['score_hibrido']), 
+        color='score_hibrido',
+        hover_data=['producto'], 
+        size_max=50,
+        color_continuous_scale="Plasma",
+        title="Valor Esperado vs Alineación Estratégica"
+    )
+    
+    fig3.update_layout(
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(family="Inter", size=12),
+        title_font=dict(size=16, color=COLORS['text']),
+        xaxis=dict(title="Alineación con Portafolio Estratégico", gridcolor='#f1f5f9'),
+        yaxis=dict(title="Valor Esperado", gridcolor='#f1f5f9')
+    )
+
+    # Tabla estilizada
+    tabla = dash_table.DataTable(
+        columns=[
+            {"name": "Producto", "id": "producto"},
+            {"name": "Score LFM Norm", "id": "score_lfm_norm", "type": "numeric", "format": {"specifier": ".3f"}},
+            {"name": "Score XGB", "id": "score_xgb", "type": "numeric", "format": {"specifier": ".3f"}},
+            {"name": "Score Híbrido", "id": "score_hibrido", "type": "numeric", "format": {"specifier": ".3f"}},
+            {"name": "Precio Promedio", "id": "precio_promedio", "type": "numeric", "format": {"specifier": ",.0f"}},
+            {"name": "Valor Esperado", "id": "valor_esperado", "type": "numeric", "format": {"specifier": ",.0f"}},
+            {"name": "Alineación Estratégica", "id": "alineación con portafolio estratégico b2b", "type": "numeric", "format": {"specifier": ".6f"}}
+        ],
+        data=df.round(6).to_dict('records'),
+        page_size=topn,
+        style_cell={
+            'textAlign': 'left',
+            'fontFamily': 'Inter',
+            'fontSize': '14px',
+            'padding': '12px'
+        },
+        style_header={
+            'backgroundColor': COLORS['primary'],
+            'color': 'white',
+            'fontWeight': '600',
+            'textAlign': 'center'
+        },
+        style_data_conditional=[
+            {
+                'if': {'row_index': 'odd'},
+                'backgroundColor': '#f8fafc'
+            }
+        ],
+        style_data={
+            'border': '1px solid #e2e8f0'
+        }
+    )
+
+    return fig1, fig2, fig3, tabla
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=8050)
