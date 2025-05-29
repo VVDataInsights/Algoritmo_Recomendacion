@@ -34,9 +34,9 @@ COLORS = {
 }
 
 # Métricas de rendimiento
-metricas_xgb_b2b = {'Precision@5': 0.8542, 'Recall@5': 0.7834, 'F1@5': 0.8172, 'NDCG@5': 0.8901}
-metricas_lfm_b2b = {'Precision@5': 0.7923, 'Recall@5': 0.8134, 'F1@5': 0.8027, 'NDCG@5': 0.8234}
-metricas_hibrido_b2b = {'Precision@5': 0.8734, 'Recall@5': 0.8456, 'F1@5': 0.8593, 'NDCG@5': 0.9123}
+metricas_xgb_b2b = {'Precision': 0.8542, 'Recall': 0.7834, 'F1': 0.8172, 'NDCG': 0.8901}
+metricas_lfm_b2b = {'Precision': 0.7923, 'Recall': 0.8134, 'F1': 0.8027, 'NDCG': 0.8234}
+metricas_hibrido_b2b = {'Precision': 0.8734, 'Recall': 0.8456, 'F1': 0.8593, 'NDCG': 0.9123}
 
 # Estilos CSS personalizados
 app.index_string = '''
@@ -177,6 +177,22 @@ def create_metric_card(title, value, color, icon):
 
 # Layout principal
 app.layout = html.Div([
+    # LOGO ESTÁTICO
+    html.Img(
+        src='/assets/logoCorona.png',
+        style={
+            'position': 'fixed',
+            'top': '40px',
+            'left': '20px',
+            'height': '60px',
+            'zIndex': '1000',
+            'backgroundColor': 'white',
+            'padding': '5px',
+            'borderRadius': '10px',
+            'boxShadow': '0 4px 12px rgba(0,0,0,0.1)'
+        }
+    ),
+
     # Header
     html.Div([
         html.Div([
@@ -213,10 +229,10 @@ app.layout = html.Div([
             'fontWeight': '600'
         }),
         html.Div([
-            create_metric_card("Precision@5", metricas_hibrido_b2b['Precision@5'], COLORS['primary'], "fa-bullseye"),
-            create_metric_card("Recall@5", metricas_hibrido_b2b['Recall@5'], COLORS['success'], "fa-search"),
-            create_metric_card("F1-Score@5", metricas_hibrido_b2b['F1@5'], COLORS['warning'], "fa-balance-scale"),
-            create_metric_card("NDCG@5", metricas_hibrido_b2b['NDCG@5'], COLORS['danger'], "fa-trophy")
+            create_metric_card("Precision", metricas_hibrido_b2b['Precision'], COLORS['primary'], "fa-bullseye"),
+            create_metric_card("Recall", metricas_hibrido_b2b['Recall'], COLORS['success'], "fa-search"),
+            create_metric_card("F1-Score", metricas_hibrido_b2b['F1'], COLORS['warning'], "fa-balance-scale"),
+            create_metric_card("NDCG", metricas_hibrido_b2b['NDCG'], COLORS['danger'], "fa-trophy")
         ], className="metrics-grid")
     ], style={'marginBottom': '30px'}),
 
