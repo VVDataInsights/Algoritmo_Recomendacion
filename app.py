@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
-from funciones.recomendador import recomendar_hibrido_b2b
+from funciones.recomendadorB2B import recomendar_hibrido_b2b
 
 # Cargar datos para obtener clientes 
 try:
