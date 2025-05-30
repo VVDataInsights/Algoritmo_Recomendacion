@@ -290,16 +290,16 @@ def create_metrics_section(model_type, metrics):
             html.I(className="fas fa-chart-line", style={'marginRight': '10px', 'color': primary_color}),
             f"Métricas de Rendimiento del Modelo Híbrido {model_type}"
         ], style={
-            'color': COLORS['text'], 
+            'color': COLORS['text'],
             'marginBottom': '20px',
             'fontSize': '24px',
             'fontWeight': '600'
         }),
         html.Div([
-            create_metric_card("Precision", metrics['Precision'], COLORS['primary'], "fa-bullseye"),
-            create_metric_card("Recall", metrics['Recall'], COLORS['success'], "fa-search"),
-            create_metric_card("F1-Score", metrics['F1'], COLORS['warning'], "fa-balance-scale"),
-            create_metric_card("NDCG", metrics['NDCG'], COLORS['accent'], "fa-trophy")
+            create_metric_card("Promedio Score", metrics['Promedio Score'], COLORS['primary'], "fa-bullseye"),
+            create_metric_card("Max Score", metrics['Max Score'], COLORS['success'], "fa-search"),
+            create_metric_card("Min Score", metrics['Min Score'], COLORS['warning'], "fa-balance-scale"),
+            create_metric_card("Desvest Score", metrics['Desvest Score'], COLORS['accent'], "fa-trophy")
         ], className="metrics-grid")
     ], style={'marginBottom': '30px'})
 
