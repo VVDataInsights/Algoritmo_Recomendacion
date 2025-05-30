@@ -12,56 +12,56 @@ model_xgb = load("./modelos/xgb_model_b2b.pkl")
 encoders = load("./modelos/encoders_b2b.pkl")
 dataset = load("./modelos/lightfm_dataset_b2b.pkl")
 df_precios_productos = pd.read_csv("./precios_productos_promedio.csv")
-b2b = pd.read_csv("./b2b_nuevo.csv")
 
-# Inicialización
-dataset = Dataset()
-dataset.fit(
-    users=b2b['id_b2b'].unique(),
-    items=b2b['producto'].unique()
-)
 
-dataset.fit_partial(
-    users=b2b['id_b2b'],
-    items=b2b['producto'],
-    user_features=np.unique([
-        *("municipio:" + b2b['municipio']),
-        *("zona:" + b2b['zona']),
-        *("unidades:" + b2b['Total de unidades'].astype(str)),
-        *("edificaciones:" + b2b['Total de edificaciones en obra'].astype(str))
-    ]),
-    item_features=np.unique([
-        *("cat_macro:" + b2b['categoria_b2b_macro']),
-        *("cat:" + b2b['categoria_b2b']),
-        *("subcat:" + b2b['subcategoria_b2b'])
-    ])
-)
+def recomendar_hibrido_b2b(b2b, cliente_id, top_n=10, alpha=0.5):
+    # Inicialización
+    dataset = Dataset()
+    dataset.fit(
+        users=b2b['id_b2b'].unique(),
+        items=b2b['producto'].unique()
+    )
 
-# Interacciones
-(interactions, _) = dataset.build_interactions(
-    ((row['id_b2b'], row['producto'], row['valor_total']) for _, row in b2b.iterrows())
-)
+    dataset.fit_partial(
+        users=b2b['id_b2b'],
+        items=b2b['producto'],
+        user_features=np.unique([
+            *("municipio:" + b2b['municipio']),
+            *("zona:" + b2b['zona']),
+            *("unidades:" + b2b['Total de unidades'].astype(str)),
+            *("edificaciones:" + b2b['Total de edificaciones en obra'].astype(str))
+        ]),
+        item_features=np.unique([
+            *("cat_macro:" + b2b['categoria_b2b_macro']),
+            *("cat:" + b2b['categoria_b2b']),
+            *("subcat:" + b2b['subcategoria_b2b'])
+        ])
+    )
 
-# User features
-user_features = dataset.build_user_features(
-    ((row['id_b2b'], [
-        f"municipio:{row['municipio']}",
-        f"zona:{row['zona']}",
-        f"unidades:{row['Total de unidades']}",
-        f"edificaciones:{row['Total de edificaciones en obra']}"
-    ]) for _, row in b2b.iterrows())
-)
+    # Interacciones
+    (interactions, _) = dataset.build_interactions(
+        ((row['id_b2b'], row['producto'], row['valor_total']) for _, row in b2b.iterrows())
+    )
 
-# Item features
-item_features = dataset.build_item_features(
-    ((row['producto'], [
-        f"cat_macro:{row['categoria_b2b_macro']}",
-        f"cat:{row['categoria_b2b']}",
-        f"subcat:{row['subcategoria_b2b']}"
-    ]) for _, row in b2b.iterrows())
-)
+    # User features
+    user_features = dataset.build_user_features(
+        ((row['id_b2b'], [
+            f"municipio:{row['municipio']}",
+            f"zona:{row['zona']}",
+            f"unidades:{row['Total de unidades']}",
+            f"edificaciones:{row['Total de edificaciones en obra']}"
+        ]) for _, row in b2b.iterrows())
+    )
 
-def recomendar_hibrido_b2b(cliente_id, top_n=10, alpha=0.5):
+    # Item features
+    item_features = dataset.build_item_features(
+        ((row['producto'], [
+            f"cat_macro:{row['categoria_b2b_macro']}",
+            f"cat:{row['categoria_b2b']}",
+            f"subcat:{row['subcategoria_b2b']}"
+        ]) for _, row in b2b.iterrows())
+    )
+
     if cliente_id not in dataset.mapping()[0]:
         return f"Cliente {cliente_id} no está en el dataset de LightFM."
 

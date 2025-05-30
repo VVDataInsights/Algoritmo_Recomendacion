@@ -24,35 +24,40 @@ app = dash.Dash(__name__, suppress_callback_exceptions=True)
 app.title = "Recomendador Híbrido B2B & B2C"
 server = app.server
 
-# Paleta de colores moderna y profesional
+# Paleta de colores Corona - Escala de azules institucionales
 COLORS = {
-    'primary': '#667eea',
-    'secondary': '#764ba2',
-    'accent': '#f093fb',
-    'success': '#4facfe',
-    'warning': '#43e97b',
-    'danger': '#fa709a',
-    'background': '#f8fafc',
-    'card': '#ffffff',
-    'text': '#2d3748',
-    'text_light': '#718096',
-    'border': '#e2e8f0',
-    'dark': '#1a202c',
-    'b2b_primary': '#667eea',
-    'b2c_primary': '#f093fb'
+    'primary': '#1e3a8a',          # Azul Corona principal
+    'secondary': '#1e40af',        # Azul medio
+    'accent': '#3b82f6',           # Azul brillante
+    'success': '#0ea5e9',          # Azul cielo
+    'warning': '#0284c7',          # Azul información
+    'danger': '#0369a1',           # Azul oscuro
+    'background': '#f0f9ff',       # Azul muy claro
+    'card': '#ffffff',             # Blanco
+    'text': '#1e293b',             # Gris azulado oscuro
+    'text_light': '#64748b',       # Gris azulado
+    'border': '#cbd5e1',           # Gris azulado claro
+    'dark': '#0f172a',             # Azul muy oscuro
+    'b2b_primary': '#1e3a8a',      # Azul Corona B2B
+    'b2c_primary': '#3b82f6',      # Azul brillante B2C
+    'light_blue': '#dbeafe',       # Azul muy claro
+    'medium_blue': '#93c5fd',      # Azul medio claro
+    'gradient_start': '#1e3a8a',   # Inicio gradiente
+    'gradient_end': '#3b82f6'      # Final gradiente
 }
 
+
 # Métricas de rendimiento
-metricas_xgb_b2b = {'Precision': 0.8542, 'Recall': 0.7834, 'F1': 0.8172, 'NDCG': 0.8901}
-metricas_lfm_b2b = {'Precision': 0.7923, 'Recall': 0.8134, 'F1': 0.8027, 'NDCG': 0.8234}
-metricas_hibrido_b2b = {'Precision': 0.8734, 'Recall': 0.8456, 'F1': 0.8593, 'NDCG': 0.9123}
+metricas_xgb_b2b = {'Precision': 0.80, 'Recall': 0.81, 'F1': 0.79, 'AUC': 0.8735}
+metricas_lfm_b2b = {'Precision': 0.9333, 'Recall': 0.0048, 'F1': 0.008, 'AUC': 0.8779}
+metricas_hibrido_b2b = {'Promedio Score': 0.7443, 'Max Score': 0.8067, 'Min Score': 0.7112, 'Desvest Score': 0.0292}
 
-# Métricas simuladas para B2C (ajustar con valores reales)
-metricas_xgb_b2c = {'Precision': 0.8234, 'Recall': 0.7654, 'F1': 0.7933, 'NDCG': 0.8567}
-metricas_lfm_b2c = {'Precision': 0.7765, 'Recall': 0.8023, 'F1': 0.7892, 'NDCG': 0.8123}
-metricas_hibrido_b2c = {'Precision': 0.8445, 'Recall': 0.8234, 'F1': 0.8338, 'NDCG': 0.8876}
+# Métricas simuladas para B2C
+metricas_xgb_b2c = {'Precision': 0.84, 'Recall': 0.86, 'F1': 0.85, 'AUC': 0.9138}
+metricas_lfm_b2c = {'Precision': 0.0119, 'Recall': 0.0657, 'F1': 0.005, 'AUC': 0.9365}
+metricas_hibrido_b2c = {'Promedio Score': 0.9717, 'Max Score': 0.9845, 'Min Score': 0.9631, 'Desvest Score': 0.0072}
 
-# Estilos CSS personalizados
+# Estilos CSS personalizados con paleta azul Corona
 app.index_string = '''
 <!DOCTYPE html>
 <html>
@@ -69,20 +74,20 @@ app.index_string = '''
             }
             body {
                 margin: 0;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
                 min-height: 100vh;
             }
             .main-container {
-                background: #f8fafc;
+                background: #f0f9ff;
                 min-height: 100vh;
                 padding: 20px;
             }
             .header-container {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%);
                 padding: 40px 20px;
                 margin: -20px -20px 30px -20px;
                 border-radius: 0 0 20px 20px;
-                box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 10px 30px rgba(30, 58, 138, 0.4);
             }
             .tabs-container {
                 margin-bottom: 30px;
@@ -90,16 +95,17 @@ app.index_string = '''
             .tabs-content {
                 background: white;
                 border-radius: 0 15px 15px 15px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                border: 1px solid #e2e8f0;
+                box-shadow: 0 4px 20px rgba(30, 58, 138, 0.1);
+                border: 1px solid #cbd5e1;
             }
             .control-panel {
                 background: white;
                 padding: 30px;
                 border-radius: 15px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                box-shadow: 0 4px 20px rgba(30, 58, 138, 0.1);
                 margin-bottom: 30px;
-                border: 1px solid #e2e8f0;
+                border: 1px solid #cbd5e1;
+                border-left: 4px solid #1e3a8a;
             }
             .metrics-grid {
                 display: grid;
@@ -111,42 +117,45 @@ app.index_string = '''
                 background: white;
                 padding: 25px;
                 border-radius: 12px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+                box-shadow: 0 4px 15px rgba(30, 58, 138, 0.1);
                 text-align: center;
-                border: 1px solid #e2e8f0;
+                border: 1px solid #cbd5e1;
+                border-top: 4px solid #1e3a8a;
                 transition: transform 0.2s ease, box-shadow 0.2s ease;
             }
             .metric-card:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+                box-shadow: 0 8px 25px rgba(30, 58, 138, 0.15);
             }
             .chart-container {
                 background: white;
                 padding: 25px;
                 border-radius: 15px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                box-shadow: 0 4px 20px rgba(30, 58, 138, 0.1);
                 margin-bottom: 30px;
-                border: 1px solid #e2e8f0;
+                border: 1px solid #cbd5e1;
+                border-left: 4px solid #3b82f6;
             }
             .table-container {
                 background: white;
                 padding: 25px;
                 border-radius: 15px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                border: 1px solid #e2e8f0;
+                box-shadow: 0 4px 20px rgba(30, 58, 138, 0.1);
+                border: 1px solid #cbd5e1;
+                border-left: 4px solid #0ea5e9;
             }
             .control-item {
                 margin-bottom: 25px;
             }
             .control-label {
                 font-weight: 600;
-                color: #2d3748;
+                color: #1e293b;
                 margin-bottom: 8px;
                 display: block;
                 font-size: 14px;
             }
             .run-button {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
                 color: white;
                 border: none;
                 padding: 15px 30px;
@@ -155,19 +164,38 @@ app.index_string = '''
                 font-size: 16px;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
                 width: 100%;
             }
             .run-button:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+                box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
+                background: linear-gradient(135deg, #1e40af 0%, #0ea5e9 100%);
             }
             .run-button.b2c {
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+                background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+                box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
             }
             .run-button.b2c:hover {
-                box-shadow: 0 8px 25px rgba(240, 147, 251, 0.4);
+                box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+                background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            }
+
+            /* Personalización de pestañas */
+            .tab-parent {
+                border-bottom: 2px solid #1e3a8a !important;
+            }
+
+            /* Personalización de dropdowns y sliders */
+            .Select-control {
+                border-color: #cbd5e1 !important;
+            }
+            .Select-control:hover {
+                border-color: #1e3a8a !important;
+            }
+            .Select--is-focused .Select-control {
+                border-color: #1e3a8a !important;
+                box-shadow: 0 0 0 1px #1e3a8a !important;
             }
         </style>
     </head>
@@ -209,7 +237,7 @@ def create_control_panel(model_type, clients_list):
     button_class = "run-button b2c" if model_type == "B2C" else "run-button"
     return html.Div([
         html.H3([
-            html.I(className="fas fa-cogs", style={'marginRight': '10px'}),
+            html.I(className="fas fa-cogs", style={'marginRight': '10px', 'color': COLORS['primary']}),
             f"Configuración del Análisis {model_type}"
         ], style={
             'color': COLORS['text'], 
@@ -259,7 +287,7 @@ def create_metrics_section(model_type, metrics):
     primary_color = COLORS['b2c_primary'] if model_type == "B2C" else COLORS['b2b_primary']
     return html.Div([
         html.H2([
-            html.I(className="fas fa-chart-line", style={'marginRight': '10px'}),
+            html.I(className="fas fa-chart-line", style={'marginRight': '10px', 'color': primary_color}),
             f"Métricas de Rendimiento del Modelo Híbrido {model_type}"
         ], style={
             'color': COLORS['text'], 
@@ -268,10 +296,10 @@ def create_metrics_section(model_type, metrics):
             'fontWeight': '600'
         }),
         html.Div([
-            create_metric_card("Precision", metrics['Precision'], primary_color, "fa-bullseye"),
+            create_metric_card("Precision", metrics['Precision'], COLORS['primary'], "fa-bullseye"),
             create_metric_card("Recall", metrics['Recall'], COLORS['success'], "fa-search"),
             create_metric_card("F1-Score", metrics['F1'], COLORS['warning'], "fa-balance-scale"),
-            create_metric_card("NDCG", metrics['NDCG'], COLORS['danger'], "fa-trophy")
+            create_metric_card("NDCG", metrics['NDCG'], COLORS['accent'], "fa-trophy")
         ], className="metrics-grid")
     ], style={'marginBottom': '30px'})
 
@@ -289,7 +317,8 @@ app.layout = html.Div([
             'backgroundColor': 'white',
             'padding': '5px',
             'borderRadius': '10px',
-            'boxShadow': '0 4px 12px rgba(0,0,0,0.1)'
+            'boxShadow': '0 4px 12px rgba(30, 58, 138, 0.2)',
+            'border': '2px solid #dbeafe'
         }
     ),
 
@@ -304,12 +333,13 @@ app.layout = html.Div([
                 'color': 'white',
                 'margin': '0 0 10px 0',
                 'fontSize': '36px',
-                'fontWeight': '700'
+                'fontWeight': '700',
+                'textShadow': '2px 2px 4px rgba(0,0,0,0.3)'
             }),
             html.P("Optimiza tus recomendaciones con algoritmos híbridos avanzados de Machine Learning",
                    style={
                        'textAlign': 'center', 
-                       'color': 'rgba(255,255,255,0.9)',
+                       'color': 'rgba(255,255,255,0.95)',
                        'margin': '0',
                        'fontSize': '18px',
                        'fontWeight': '400'
@@ -330,12 +360,15 @@ app.layout = html.Div([
                         'padding': '12px 24px',
                         'fontWeight': '600',
                         'fontSize': '16px',
-                        'borderRadius': '15px 15px 0 0'
+                        'borderRadius': '15px 15px 0 0',
+                        'backgroundColor': '#f0f9ff',
+                        'border': '1px solid #cbd5e1'
                     },
                     selected_style={
                         'backgroundColor': COLORS['b2b_primary'],
                         'color': 'white',
-                        'borderBottom': 'none'
+                        'borderBottom': 'none',
+                        'borderTop': '3px solid #0f172a'
                     }
                 ),
                 dcc.Tab(
@@ -345,12 +378,15 @@ app.layout = html.Div([
                         'padding': '12px 24px',
                         'fontWeight': '600',
                         'fontSize': '16px',
-                        'borderRadius': '15px 15px 0 0'
+                        'borderRadius': '15px 15px 0 0',
+                        'backgroundColor': '#f0f9ff',
+                        'border': '1px solid #cbd5e1'
                     },
                     selected_style={
                         'backgroundColor': COLORS['b2c_primary'],
                         'color': 'white',
-                        'borderBottom': 'none'
+                        'borderBottom': 'none',
+                        'borderTop': '3px solid #0f172a'
                     }
                 )
             ],
@@ -379,7 +415,7 @@ def render_tab_content(active_tab):
             # Gráficos B2B
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-chart-bar", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-chart-bar", style={'marginRight': '10px', 'color': COLORS['primary']}),
                     "Comparación de Modelos"
                 ], style={
                     'color': COLORS['text'], 
@@ -392,7 +428,7 @@ def render_tab_content(active_tab):
 
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-sort-amount-down", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-sort-amount-down", style={'marginRight': '10px', 'color': COLORS['primary']}),
                     "Ranking de Productos"
                 ], style={
                     'color': COLORS['text'], 
@@ -405,7 +441,7 @@ def render_tab_content(active_tab):
 
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-scatter-chart", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-scatter-chart", style={'marginRight': '10px', 'color': COLORS['primary']}),
                     "Análisis de Valor vs Alineación Estratégica"
                 ], style={
                     'color': COLORS['text'], 
@@ -419,7 +455,7 @@ def render_tab_content(active_tab):
             # Tabla de resultados B2B
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-table", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-table", style={'marginRight': '10px', 'color': COLORS['primary']}),
                     "Resultados Detallados"
                 ], style={
                     'color': COLORS['text'], 
@@ -442,7 +478,7 @@ def render_tab_content(active_tab):
             # Gráficos B2C
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-chart-bar", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-chart-bar", style={'marginRight': '10px', 'color': COLORS['b2c_primary']}),
                     "Comparación de Modelos"
                 ], style={
                     'color': COLORS['text'], 
@@ -455,7 +491,7 @@ def render_tab_content(active_tab):
 
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-sort-amount-down", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-sort-amount-down", style={'marginRight': '10px', 'color': COLORS['b2c_primary']}),
                     "Ranking de Productos"
                 ], style={
                     'color': COLORS['text'], 
@@ -468,7 +504,7 @@ def render_tab_content(active_tab):
 
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-scatter-chart", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-scatter-chart", style={'marginRight': '10px', 'color': COLORS['b2c_primary']}),
                     "Análisis de Valor vs Alineación Estratégica"
                 ], style={
                     'color': COLORS['text'], 
@@ -482,7 +518,7 @@ def render_tab_content(active_tab):
             # Tabla de resultados B2C
             html.Div([
                 html.H3([
-                    html.I(className="fas fa-table", style={'marginRight': '10px'}),
+                    html.I(className="fas fa-table", style={'marginRight': '10px', 'color': COLORS['b2c_primary']}),
                     "Resultados Detallados"
                 ], style={
                     'color': COLORS['text'], 
@@ -506,7 +542,7 @@ def render_tab_content(active_tab):
      State("alpha_b2b", "value")]
 )
 def actualizar_dashboard_b2b(n_clicks, cliente_id, topn, alpha):
-    return actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, "B2B", recomendar_hibrido_b2b)
+    return actualizar_dashboard_general("b2b", n_clicks, cliente_id, topn, alpha, "B2B", recomendar_hibrido_b2b)
 
 # Callbacks para B2C
 @app.callback(
@@ -520,9 +556,9 @@ def actualizar_dashboard_b2b(n_clicks, cliente_id, topn, alpha):
      State("alpha_b2c", "value")]
 )
 def actualizar_dashboard_b2c(n_clicks, cliente_id, topn, alpha):
-    return actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, "B2C", recomendar_hibrido)
+    return actualizar_dashboard_general("b2c", n_clicks, cliente_id, topn, alpha, "B2C", recomendar_hibrido)
 
-def actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, model_type, recomendador_func):
+def actualizar_dashboard_general(typeData, n_clicks, cliente_id, topn, alpha, model_type, recomendador_func):
     if n_clicks == 0 or not cliente_id:
         # Gráficos vacíos con mensaje
         empty_fig = go.Figure()
@@ -545,8 +581,12 @@ def actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, model_type, 
                    style={'textAlign': 'center', 'color': COLORS['text_light'], 'fontSize': '16px'})
         ])
 
+    if typeData == "b2b":
+        data = b2b_data
+    else:
+        data = b2c_data
     # Obtener recomendaciones
-    df = recomendador_func(cliente_id=cliente_id, top_n=topn, alpha=alpha)
+    df = recomendador_func(data, cliente_id=cliente_id, top_n=topn, alpha=alpha)
     if isinstance(df, str):
         error_fig = go.Figure()
         error_fig.add_annotation(
@@ -579,7 +619,7 @@ def actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, model_type, 
     if 'score_hibrido' not in df.columns:
         df['score_hibrido'] = alpha * df['score_lfm_norm'] + (1 - alpha) * df['score_xgb']
 
-    # Gráfico 1: Comparación de modelos
+    # Gráfico 1: Comparación de modelos con colores Corona azules
     df_melted = df.melt(
         id_vars='producto', 
         value_vars=['score_lfm_norm', 'score_xgb', 'score_hibrido'],
@@ -587,12 +627,13 @@ def actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, model_type, 
         value_name='score'
     )
     
+    # Paleta de azules Corona para los modelos
     model_colors = {
-        'score_lfm_norm': COLORS['b2c_primary'] if model_type == "B2C" else COLORS['primary'],
-        'score_xgb': COLORS['secondary'], 
-        'score_hibrido': COLORS['accent']
+        'score_lfm_norm': COLORS['primary'],
+        'score_xgb': COLORS['success'],
+        'score_hibrido': COLORS['secondary']
     }
-    
+
     fig1 = px.bar(
         df_melted, 
         x='producto', 
@@ -644,20 +685,20 @@ def actualizar_dashboard_general(n_clicks, cliente_id, topn, alpha, model_type, 
     # Para B2C: alineación estratégica, valor_esperado
     x_col = 'alineación con portafolio estratégico b2b' if model_type == "B2B" else 'alineación estratégica'
     x_title = "Alineación con Portafolio Estratégico" if model_type == "B2B" else "Alineación Estratégica"
-    
+
     if x_col in df.columns and 'valor_esperado' in df.columns:
         fig3 = px.scatter(
-            df, 
-            x=x_col, 
+            df,
+            x=x_col,
             y='valor_esperado',
-            size=np.abs(df['score_hibrido']), 
+            size=np.abs(df['score_hibrido']),
             color='score_hibrido',
-            hover_data=['producto'], 
+            hover_data=['producto'],
             size_max=50,
             color_continuous_scale="Plasma",
             title=f"Valor Esperado vs {x_title} - {model_type}"
         )
-        
+
         fig3.update_layout(
             plot_bgcolor='white',
             paper_bgcolor='white',

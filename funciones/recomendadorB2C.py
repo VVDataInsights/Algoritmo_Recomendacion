@@ -13,11 +13,10 @@ item_features = load("./modelos/b2c_item_features.pkl")
 xgb_user_feats = load("./modelos/b2c_user_features_df.pkl")  # Para XGBoost
 xgb_item_feats = load("./modelos/b2c_item_features_df.pkl")
 
-b2c = pd.read_csv("./b2c_nuevo.csv")
 precios = pd.read_csv("./df_precios.csv")
 
 # --- Función principal ---
-def recomendar_hibrido(cliente_id, top_n=10, alpha=0.5):
+def recomendar_hibrido(b2c, cliente_id, top_n=10, alpha=0.5):
     if cliente_id not in dataset.mapping()[0]:
         return f"Cliente {cliente_id} no está en el dataset de LightFM."
 
